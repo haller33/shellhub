@@ -6,8 +6,11 @@ import (
 )
 
 type Envs struct {
-	MongoURI                      string `env:"MONGO_URI,default=mongodb://mongo:27017/main"`
-	RedisURI                      string `env:"REDIS_URI,default=redis://redis:6379"`
+	MongoURI string `env:"MONGO_URI,default=mongodb://mongo:27017/main"`
+	RedisURI string `env:"REDIS_URI,default=redis://redis:6379"`
+	// SessionRecordCleanupSchedule indicates the frequency to clean up the session older than a defined date.
+	//
+	// The value follows the cron schedule expression generator.
 	SessionRecordCleanupSchedule  string `env:"SESSION_RECORD_CLEANUP_SCHEDULE,default=@daily"`
 	SessionRecordCleanupRetention int    `env:"RECORD_RETENTION,default=0"`
 	// AsynqGroupMaxDelay is the maximum duration to wait before processing a group of tasks.
@@ -16,15 +19,15 @@ type Envs struct {
 	//
 	// Check [https://github.com/hibiken/asynq/wiki/Task-aggregation] for more information.
 	AsynqGroupMaxDelay int `env:"ASYNQ_GROUP_MAX_DELAY,default=1"`
-	// AsynqGroupGracePeriod is the grace period has configurable upper bound: you can set a maximum aggregation delay, after which Asynq server
-	// will aggregate the tasks regardless of the remaining grace period.
+	// AsynqGroupGracePeriod is the grace period has configurable upper bound: you can set a maximum aggregation delay,
+	// after which Asynq server will aggregate the tasks regardless of the remaining grace period.
 	///
 	// Its time unit is second.
 	//
 	// Check [https://github.com/hibiken/asynq/wiki/Task-aggregation] for more information.
 	AsynqGroupGracePeriod int64 `env:"ASYNQ_GROUP_GRACE_PERIOD,default=1"`
-	// AsynqGroupMaxSize is the maximum number of tasks that can be aggregated together. If that number is reached, Asynq
-	// server will aggregate the tasks immediately.
+	// AsynqGroupMaxSize is the maximum number of tasks that can be aggregated together. If that number is reached,
+	// Asynq server will aggregate the tasks immediately.
 	//
 	// Check [https://github.com/hibiken/asynq/wiki/Task-aggregation] for more information.
 	AsynqGroupMaxSize int `env:"ASYNQ_GROUP_MAX_SIZE,default=500"`
@@ -33,7 +36,7 @@ type Envs struct {
 func getEnvs() (*Envs, error) {
 	env, err := envs.ParseWithPrefix[Envs]("API_")
 	if err != nil {
-		log.WithError(err).Error("Failed to parse environment variables with prefix 'api'")
+		log.WithError(err).Error("failed to parse environment variables with prefix 'api'")
 
 		return nil, err
 	}

@@ -6,6 +6,7 @@ import (
 	"os"
 	"os/signal"
 	"syscall"
+	"time"
 
 	"github.com/getsentry/sentry-go"
 	"github.com/labstack/echo/v4"
@@ -66,12 +67,16 @@ var serverCmd = &cobra.Command{
 
 		log.Info("Connected to MongoDB")
 
-		worker, err := workers.New(store)
+		wrks, err := workers.NewWorkers(store)
 		if err != nil {
 			log.WithError(err).Warn("Failed to create workers.")
 		}
 
-		worker.Start(ctx)
+		wrks.Init(ctx)
+
+		time.AfterFunc(10*time.Second, func() {
+			close(wrks.Channels["heartbeat"])
+		})
 
 		go func() {
 			sig := <-sigs

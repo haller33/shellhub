@@ -12,6 +12,11 @@ import (
 	log "github.com/sirupsen/logrus"
 )
 
+const (
+	TaskSessionCleanup = "session_record:cleanup"
+	TaskHeartbeat      = "api:heartbeat"
+)
+
 type Workers struct {
 	store store.Store
 
@@ -20,11 +25,14 @@ type Workers struct {
 	mux       *asynq.ServeMux
 	env       *Envs
 	scheduler *asynq.Scheduler
+
+	Channels map[string]chan Task
+	Workers  map[string]Worker
 }
 
-// New creates a new Workers instance with the provided store. It initializes
+// NewWorkers creates a new Workers instance with the provided store. It initializes
 // the worker's components, such as server, scheduler, and environment settings.
-func New(store store.Store) (*Workers, error) {
+func NewWorkers(store store.Store) (*Workers, error) {
 	env, err := getEnvs()
 	if err != nil {
 		log.WithFields(log.Fields{"component": "worker"}).
@@ -80,18 +88,66 @@ func New(store store.Store) (*Workers, error) {
 		mux:       mux,
 		scheduler: scheduler,
 		store:     store,
+		Channels:  make(map[string]chan Task),
+		Workers:   make(map[string]Worker),
 	}
 
 	return w, nil
 }
 
-// Start initiates the server. It creates two new goroutines: one for the server itself
-// and another for the scheduler. This method is also responsible for setting up all
-// the server handlers.
-func (w *Workers) Start(ctx context.Context) {
-	log.WithFields(log.Fields{"component": "worker"}).Info("Starting workers")
+func (w *Workers) registerHeartbeat(tasks chan Task) {
+	w.mux.HandleFunc(TaskHeartbeat, func(ctx context.Context, task *asynq.Task) error {
+		log.WithFields(log.Fields{
+			"component": "worker",
+			"task":      TaskHeartbeat,
+		}).Trace("Executing heartbeat worker.")
 
-	w.setupHandlers()
+		tasks <- Task{
+			Payload: task.Payload(),
+		}
+
+		return nil
+	})
+}
+
+func (w *Workers) registerSessionCleanup(tasks chan Task) {
+	if w.env.SessionRecordCleanupRetention < 1 {
+		log.WithFields(
+			log.Fields{
+				"component": "worker",
+				"task":      TaskSessionCleanup,
+			}).
+			Warnf("Aborting cleanup worker due to SHELLHUB_RECORD_RETENTION equal to %d.", w.env.SessionRecordCleanupRetention)
+
+		return
+	}
+
+	w.mux.HandleFunc(TaskSessionCleanup, func(ctx context.Context, _ *asynq.Task) error {
+		log.WithFields(log.Fields{
+			"component": "worker",
+			"task":      TaskSessionCleanup,
+		}).Info("running CleanUp worker's task")
+
+		tasks <- Task{}
+
+		return nil
+	})
+
+	task := asynq.NewTask(TaskSessionCleanup, nil, asynq.TaskID(TaskSessionCleanup), asynq.Queue("session_record"))
+	if _, err := w.scheduler.Register(w.env.SessionRecordCleanupSchedule, task); err != nil {
+		log.WithFields(
+			log.Fields{
+				"component": "worker",
+				"task":      TaskSessionCleanup,
+			}).
+			WithError(err).
+			Error("Failed to register the scheduler.")
+	}
+}
+
+func (w *Workers) asynqScheduler(ctx context.Context) {
+	w.registerSessionCleanup(w.Channels["clean_up"])
+	w.registerHeartbeat(w.Channels["heartbeat"])
 
 	go func() {
 		if err := w.srv.Run(w.mux); err != nil {
@@ -109,19 +165,30 @@ func (w *Workers) Start(ctx context.Context) {
 		}
 	}()
 
-	go func() {
-		<-ctx.Done()
+	<-ctx.Done()
 
-		log.Info("Shutdown workers")
+	log.Info("Shutdown workers")
 
-		w.srv.Shutdown()
-		w.scheduler.Shutdown()
-	}()
+	w.srv.Shutdown()
+	w.scheduler.Shutdown()
 }
 
-// setupHandlers is responsible for registering all the handlers of the server. It needs
-// to be called before any initialization.
-func (w *Workers) setupHandlers() {
-	w.registerSessionCleanup()
-	w.registerHeartbeat()
+// Start initiates the workers and its server and scheduler.
+func (w *Workers) Init(ctx context.Context) {
+	w.Workers["clean_up"] = &CleanUpWorker{
+		store:                         w.store,
+		SessionRecordCleanupRetention: w.env.SessionRecordCleanupRetention,
+	}
+
+	w.Workers["heartbeat"] = &HeartBeatWorker{
+		store: w.store,
+	}
+
+	for id, worker := range w.Workers {
+		w.Channels[id] = make(chan Task)
+
+		go worker.Init(w.Channels[id])
+	}
+
+	go w.asynqScheduler(ctx)
 }
