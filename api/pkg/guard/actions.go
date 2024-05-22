@@ -11,6 +11,7 @@ type AllActions struct {
 	Namespace NamespaceActions
 	Billing   BillingActions
 	APIKey    APIKeyActions
+	Connector ConnectorActions
 }
 
 type DeviceActions struct {
@@ -39,6 +40,10 @@ type BillingActions struct {
 
 type APIKeyActions struct {
 	Create, Edit, Delete int
+}
+
+type ConnectorActions struct {
+	Update, Set, Status int
 }
 
 // Actions has all available and allowed actions.
@@ -98,5 +103,10 @@ var Actions = AllActions{
 		Create: APIKeyCreate,
 		Edit:   APIKeyEdit,
 		Delete: APIKeyDelete,
+	},
+	Connector: ConnectorActions{
+		Update: ConnectorUpdate,
+		Set:    ConnectorSet,
+		Status: ConnectorStatus,
 	},
 }

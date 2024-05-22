@@ -36,6 +36,9 @@ const (
 	UserPasswordTag = "password"
 	// DeviceNameTag contains the rule to validate the device's name.
 	DeviceNameTag = "device_name"
+	// PrivateKeyPEMTag contains the rule to validate a private key.
+	PrivateKeyPEMTag = "privateKeyPEM"
+	CertPEMTag       = "certPEM"
 )
 
 // Rules is a slice that contains all validation rules.
@@ -131,6 +134,20 @@ var Rules = []Rule{
 			}
 		},
 		Error: fmt.Errorf("role must be \"owner\", \"administrator\", \"operator\" or \"observer\""),
+	},
+	{
+		Tag: PrivateKeyPEMTag,
+		Handler: func(field validator.FieldLevel) bool {
+			return regexp.MustCompile(`^(-----BEGIN PRIVATE KEY-----(\n|\r|\r\n)([0-9a-zA-Z+/=]{64}(\n|\r|\r\n))*([0-9a-zA-Z+/=]{1,63}(\n|\r|\r\n))?-----END PRIVATE KEY-----)$`).MatchString(field.Field().String())
+		},
+		Error: fmt.Errorf("the priate key is invalid"),
+	},
+	{
+		Tag: CertPEMTag,
+		Handler: func(field validator.FieldLevel) bool {
+			return regexp.MustCompile(`^(-----BEGIN CERTIFICATE-----(\n|\r|\r\n)([0-9a-zA-Z+/=]{64}(\n|\r|\r\n))*([0-9a-zA-Z+/=]{1,63}(\n|\r|\r\n))?-----END CERTIFICATE-----)$`).MatchString(field.Field().String())
+		},
+		Error: fmt.Errorf("the cert is invalid"),
 	},
 }
 
