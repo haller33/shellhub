@@ -8,6 +8,7 @@ import (
 	"github.com/shellhub-io/shellhub/api/pkg/gateway"
 	"github.com/shellhub-io/shellhub/api/store"
 	"github.com/shellhub-io/shellhub/api/store/mongo/queries"
+	"github.com/shellhub-io/shellhub/pkg/api/auth"
 	"github.com/shellhub-io/shellhub/pkg/api/query"
 	"github.com/shellhub-io/shellhub/pkg/models"
 	"github.com/sirupsen/logrus"
@@ -287,13 +288,13 @@ func (s *Store) NamespaceUpdate(ctx context.Context, tenantID string, namespace 
 	return nil
 }
 
-func (s *Store) NamespaceAddMember(ctx context.Context, tenantID string, memberID string, memberRole string) (*models.Namespace, error) {
+func (s *Store) NamespaceAddMember(ctx context.Context, tenantID string, memberID string, memberRole auth.Role) (*models.Namespace, error) {
 	result := s.db.Collection("namespaces").FindOne(ctx, bson.M{"tenant_id": tenantID, "members": bson.M{"$elemMatch": bson.M{"id": memberID}}})
 	if result.Err() == nil {
 		return nil, ErrNamespaceDuplicatedMember
 	}
 
-	_, err := s.db.Collection("namespaces").UpdateOne(ctx, bson.M{"tenant_id": tenantID}, bson.M{"$addToSet": bson.M{"members": bson.M{"id": memberID, "role": memberRole}}})
+	_, err := s.db.Collection("namespaces").UpdateOne(ctx, bson.M{"tenant_id": tenantID}, bson.M{"$addToSet": bson.M{"members": bson.M{"id": memberID, "role": memberRole.String()}}})
 	if err != nil {
 		return nil, FromMongoError(err)
 	}
@@ -327,8 +328,8 @@ func (s *Store) NamespaceRemoveMember(ctx context.Context, tenantID string, memb
 	return s.NamespaceGet(ctx, tenantID, true)
 }
 
-func (s *Store) NamespaceEditMember(ctx context.Context, tenantID string, memberID string, memberNewRole string) error {
-	ns, err := s.db.Collection("namespaces").UpdateOne(ctx, bson.M{"tenant_id": tenantID, "members.id": memberID}, bson.M{"$set": bson.M{"members.$.role": memberNewRole}})
+func (s *Store) NamespaceEditMember(ctx context.Context, tenantID string, memberID string, memberNewRole auth.Role) error {
+	ns, err := s.db.Collection("namespaces").UpdateOne(ctx, bson.M{"tenant_id": tenantID, "members.id": memberID}, bson.M{"$set": bson.M{"members.$.role": memberNewRole.String()}})
 	if err != nil {
 		return FromMongoError(err)
 	}

@@ -6,9 +6,9 @@ import (
 	"testing"
 	"time"
 
-	"github.com/shellhub-io/shellhub/api/pkg/guard"
 	"github.com/shellhub-io/shellhub/api/store"
 	"github.com/shellhub-io/shellhub/api/store/mongo"
+	"github.com/shellhub-io/shellhub/pkg/api/auth"
 	"github.com/shellhub-io/shellhub/pkg/api/query"
 	"github.com/shellhub-io/shellhub/pkg/models"
 	"github.com/stretchr/testify/assert"
@@ -45,11 +45,11 @@ func TestNamespaceList(t *testing.T) {
 						Members: []models.Member{
 							{
 								ID:   "507f1f77bcf86cd799439011",
-								Role: guard.RoleOwner,
+								Role: auth.RoleOwner,
 							},
 							{
 								ID:   "6509e169ae6144b2f56bf288",
-								Role: guard.RoleObserver,
+								Role: auth.RoleObserver,
 							},
 						},
 						MaxDevices: -1,
@@ -63,11 +63,11 @@ func TestNamespaceList(t *testing.T) {
 						Members: []models.Member{
 							{
 								ID:   "6509e169ae6144b2f56bf288",
-								Role: guard.RoleOwner,
+								Role: auth.RoleOwner,
 							},
 							{
 								ID:   "907f1f77bcf86cd799439022",
-								Role: guard.RoleOperator,
+								Role: auth.RoleOperator,
 							},
 						},
 						MaxDevices: 10,
@@ -81,7 +81,7 @@ func TestNamespaceList(t *testing.T) {
 						Members: []models.Member{
 							{
 								ID:   "657b0e3bff780d625f74e49a",
-								Role: guard.RoleOwner,
+								Role: auth.RoleOwner,
 							},
 						},
 						MaxDevices: 3,
@@ -95,7 +95,7 @@ func TestNamespaceList(t *testing.T) {
 						Members: []models.Member{
 							{
 								ID:   "6577267d8752d05270a4c07d",
-								Role: guard.RoleOwner,
+								Role: auth.RoleOwner,
 							},
 						},
 						MaxDevices: -1,
@@ -170,11 +170,11 @@ func TestNamespaceGet(t *testing.T) {
 					Members: []models.Member{
 						{
 							ID:   "507f1f77bcf86cd799439011",
-							Role: guard.RoleOwner,
+							Role: auth.RoleOwner,
 						},
 						{
 							ID:   "6509e169ae6144b2f56bf288",
-							Role: guard.RoleObserver,
+							Role: auth.RoleObserver,
 						},
 					},
 					MaxDevices:   -1,
@@ -198,11 +198,11 @@ func TestNamespaceGet(t *testing.T) {
 					Members: []models.Member{
 						{
 							ID:   "507f1f77bcf86cd799439011",
-							Role: guard.RoleOwner,
+							Role: auth.RoleOwner,
 						},
 						{
 							ID:   "6509e169ae6144b2f56bf288",
-							Role: guard.RoleObserver,
+							Role: auth.RoleObserver,
 						},
 					},
 					MaxDevices:   -1,
@@ -263,11 +263,11 @@ func TestNamespaceGetByName(t *testing.T) {
 					Members: []models.Member{
 						{
 							ID:   "507f1f77bcf86cd799439011",
-							Role: guard.RoleOwner,
+							Role: auth.RoleOwner,
 						},
 						{
 							ID:   "6509e169ae6144b2f56bf288",
-							Role: guard.RoleObserver,
+							Role: auth.RoleObserver,
 						},
 					},
 					MaxDevices: -1,
@@ -327,11 +327,11 @@ func TestNamespaceGetFirst(t *testing.T) {
 					Members: []models.Member{
 						{
 							ID:   "507f1f77bcf86cd799439011",
-							Role: guard.RoleOwner,
+							Role: auth.RoleOwner,
 						},
 						{
 							ID:   "6509e169ae6144b2f56bf288",
-							Role: guard.RoleObserver,
+							Role: auth.RoleObserver,
 						},
 					},
 					MaxDevices: -1,
@@ -378,7 +378,7 @@ func TestNamespaceCreate(t *testing.T) {
 				Members: []models.Member{
 					{
 						ID:   "507f1f77bcf86cd799439011",
-						Role: guard.RoleOwner,
+						Role: auth.RoleOwner,
 					},
 				},
 				MaxDevices: -1,
@@ -393,7 +393,7 @@ func TestNamespaceCreate(t *testing.T) {
 					Members: []models.Member{
 						{
 							ID:   "507f1f77bcf86cd799439011",
-							Role: guard.RoleOwner,
+							Role: auth.RoleOwner,
 						},
 					},
 					MaxDevices: -1,
@@ -555,7 +555,7 @@ func TestNamespaceAddMember(t *testing.T) {
 		description string
 		tenant      string
 		member      string
-		role        string
+		role        auth.Role
 		fixtures    []string
 		expected    Expected
 	}{
@@ -563,7 +563,7 @@ func TestNamespaceAddMember(t *testing.T) {
 			description: "fails when tenant is not found",
 			tenant:      "nonexistent",
 			member:      "6509de884238881ac1b2b289",
-			role:        guard.RoleObserver,
+			role:        auth.RoleObserver,
 			fixtures:    []string{fixtureNamespaces},
 			expected: Expected{
 				ns:  nil,
@@ -574,7 +574,7 @@ func TestNamespaceAddMember(t *testing.T) {
 			description: "fails when member has already been added",
 			tenant:      "00000000-0000-4000-0000-000000000000",
 			member:      "6509e169ae6144b2f56bf288",
-			role:        guard.RoleObserver,
+			role:        auth.RoleObserver,
 			fixtures:    []string{fixtureNamespaces},
 			expected: Expected{
 				ns:  nil,
@@ -585,7 +585,7 @@ func TestNamespaceAddMember(t *testing.T) {
 			description: "succeeds when tenant is found",
 			tenant:      "00000000-0000-4000-0000-000000000000",
 			member:      "6509de884238881ac1b2b289",
-			role:        guard.RoleObserver,
+			role:        auth.RoleObserver,
 			fixtures:    []string{fixtureNamespaces},
 			expected: Expected{
 				ns: &models.Namespace{
@@ -596,15 +596,15 @@ func TestNamespaceAddMember(t *testing.T) {
 					Members: []models.Member{
 						{
 							ID:   "507f1f77bcf86cd799439011",
-							Role: guard.RoleOwner,
+							Role: auth.RoleOwner,
 						},
 						{
 							ID:   "6509e169ae6144b2f56bf288",
-							Role: guard.RoleObserver,
+							Role: auth.RoleObserver,
 						},
 						{
 							ID:   "6509de884238881ac1b2b289",
-							Role: guard.RoleObserver,
+							Role: auth.RoleObserver,
 						},
 					},
 					MaxDevices:   -1,
@@ -636,7 +636,7 @@ func TestNamespaceEditMember(t *testing.T) {
 		description string
 		tenant      string
 		member      string
-		role        string
+		role        auth.Role
 		fixtures    []string
 		expected    error
 	}{
@@ -644,7 +644,7 @@ func TestNamespaceEditMember(t *testing.T) {
 			description: "fails when user is not found",
 			tenant:      "nonexistent",
 			member:      "000000000000000000000000",
-			role:        guard.RoleObserver,
+			role:        auth.RoleObserver,
 			fixtures:    []string{fixtureNamespaces},
 			expected:    mongo.ErrUserNotFound,
 		},
@@ -652,7 +652,7 @@ func TestNamespaceEditMember(t *testing.T) {
 			description: "succeeds when tenant and user is found",
 			tenant:      "00000000-0000-4000-0000-000000000000",
 			member:      "6509e169ae6144b2f56bf288",
-			role:        guard.RoleOperator,
+			role:        auth.RoleOperator,
 			fixtures:    []string{fixtureNamespaces},
 			expected:    nil,
 		},
@@ -720,7 +720,7 @@ func TestNamespaceRemoveMember(t *testing.T) {
 					Members: []models.Member{
 						{
 							ID:   "507f1f77bcf86cd799439011",
-							Role: guard.RoleOwner,
+							Role: auth.RoleOwner,
 						},
 					},
 					MaxDevices:   -1,

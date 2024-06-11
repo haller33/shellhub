@@ -51,7 +51,7 @@ func (h *Handler) AuthRequest(c gateway.Context) error {
 		}
 
 		c.Response().Header().Set("X-Tenant-ID", apiKey.TenantID)
-		c.Response().Header().Set("X-Role", apiKey.Role)
+		c.Response().Header().Set("X-Role", apiKey.Role.String())
 		c.Response().Header().Set("X-API-KEY", key)
 
 		return c.NoContent(http.StatusOK)

@@ -14,9 +14,9 @@ import (
 
 	"github.com/golang-jwt/jwt/v4"
 	"github.com/shellhub-io/shellhub/api/pkg/gateway"
-	"github.com/shellhub-io/shellhub/api/pkg/guard"
 	svc "github.com/shellhub-io/shellhub/api/services"
 	"github.com/shellhub-io/shellhub/api/services/mocks"
+	"github.com/shellhub-io/shellhub/pkg/api/auth"
 	"github.com/shellhub-io/shellhub/pkg/api/requests"
 	"github.com/shellhub-io/shellhub/pkg/clock"
 	"github.com/shellhub-io/shellhub/pkg/models"
@@ -70,7 +70,7 @@ func TestAuthGetToken(t *testing.T) {
 
 			req := httptest.NewRequest(http.MethodGet, fmt.Sprintf("/internal/auth/token/%s", jsonData), strings.NewReader(string(jsonData)))
 			req.Header.Set("Content-Type", "application/json")
-			req.Header.Set("X-Role", guard.RoleOwner)
+			req.Header.Set("X-Role", auth.RoleOwner.String())
 			req.Header.Set("X-ID", string(jsonData))
 			rec := httptest.NewRecorder()
 
@@ -698,7 +698,7 @@ func TestAuthRequest(t *testing.T) {
 
 			req.Header.Add("Authorization", "Bearer "+tokenStr)
 
-			req.Header.Set("X-Role", guard.RoleOwner)
+			req.Header.Set("X-Role", auth.RoleOwner.String())
 
 			rec := httptest.NewRecorder()
 

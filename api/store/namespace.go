@@ -3,6 +3,7 @@ package store
 import (
 	"context"
 
+	"github.com/shellhub-io/shellhub/pkg/api/auth"
 	"github.com/shellhub-io/shellhub/pkg/api/query"
 	"github.com/shellhub-io/shellhub/pkg/models"
 )
@@ -26,9 +27,9 @@ type NamespaceStore interface {
 
 	NamespaceUpdate(ctx context.Context, tenantID string, namespace *models.Namespace) error
 	NamespaceDelete(ctx context.Context, tenantID string) error
-	NamespaceAddMember(ctx context.Context, tenantID string, memberID string, memberRole string) (*models.Namespace, error)
+	NamespaceAddMember(ctx context.Context, tenantID string, memberID string, memberRole auth.Role) (*models.Namespace, error)
+	NamespaceEditMember(ctx context.Context, tenantID string, memberID string, memberNewRole auth.Role) error
 	NamespaceRemoveMember(ctx context.Context, tenantID string, memberID string) (*models.Namespace, error)
-	NamespaceEditMember(ctx context.Context, tenantID string, memberID string, memberNewRole string) error
 	NamespaceGetFirst(ctx context.Context, id string) (*models.Namespace, error)
 	NamespaceSetSessionRecord(ctx context.Context, sessionRecord bool, tenantID string) error
 	NamespaceGetSessionRecord(ctx context.Context, tenantID string) (bool, error)

@@ -23,7 +23,7 @@ func CreateAPIKeyFromModel(m *models.APIKey) *CreateAPIKey {
 		Name:      m.Name,
 		UserID:    m.CreatedBy,
 		TenantID:  m.TenantID,
-		Role:      m.Role,
+		Role:      m.Role.String(),
 		CreatedAt: m.CreatedAt,
 		UpdatedAt: m.UpdatedAt,
 		ExpiresIn: m.ExpiresIn,

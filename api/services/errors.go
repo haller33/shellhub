@@ -127,7 +127,13 @@ var (
 	ErrAPIKeyNotFound               = errors.New("APIKey not found", ErrLayer, ErrCodeNotFound)
 	ErrAPIKeyDuplicated             = errors.New("APIKey duplicated", ErrLayer, ErrCodeDuplicated)
 	ErrAuthForbidden                = errors.New("user is authenticated but cannot access this resource", ErrLayer, ErrCodeForbidden)
+	ErrRoleInvalid                  = errors.New("role is invalid", ErrLayer, ErrCodeForbidden)
 )
+
+// NewErrNotFound returns an error with the ErrDataNotFound and wrap an error.
+func NewErrRoleInvalid() error {
+	return ErrRoleInvalid
+}
 
 // NewErrNotFound returns an error with the ErrDataNotFound and wrap an error.
 func NewErrNoContentChange(err error, next error) error {

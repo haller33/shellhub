@@ -238,7 +238,7 @@ func (s *service) AuthUser(ctx context.Context, req *requests.UserAuth, sourceIP
 		info, _ := ns.FindMember(user.ID)
 
 		claims.Tenant = ns.TenantID
-		claims.Role = info.Role
+		claims.Role = info.Role.String()
 	}
 
 	jwtToken, err := jwttoken.Encode(claims.WithDefaults(), s.privKey)
@@ -319,7 +319,7 @@ func (s *service) AuthGetToken(ctx context.Context, id string) (*models.UserAuth
 	if namespace != nil {
 		tenant = namespace.TenantID
 		if member, ok := namespace.FindMember(user.ID); ok {
-			role = member.Role
+			role = member.Role.String()
 		}
 	}
 
@@ -402,7 +402,7 @@ func (s *service) AuthSwapToken(ctx context.Context, id, tenant string) (*models
 			claims := &models.UserAuthClaims{
 				ID:       user.ID,
 				Tenant:   tenant,
-				Role:     member.Role,
+				Role:     member.Role.String(),
 				Admin:    true,
 				Username: user.Username,
 				MFA:      user.MFA.Enabled,
@@ -430,7 +430,7 @@ func (s *service) AuthSwapToken(ctx context.Context, id, tenant string) (*models
 				RecoveryEmail: user.RecoveryEmail,
 				MFA:           user.MFA.Enabled,
 				Tenant:        tenant,
-				Role:          member.Role,
+				Role:          member.Role.String(),
 				Token:         jwtToken,
 			}, nil
 		}
@@ -450,7 +450,7 @@ func (s *service) AuthUserInfo(ctx context.Context, username, tenant, token stri
 	var role string
 	if namespace != nil {
 		if member, _ := namespace.FindMember(user.ID); member != nil {
-			role = member.Role
+			role = member.Role.String()
 		}
 	}
 

@@ -6,7 +6,7 @@ import (
 	"encoding/hex"
 	"errors"
 
-	"github.com/shellhub-io/shellhub/api/pkg/guard"
+	"github.com/shellhub-io/shellhub/pkg/api/auth"
 	"github.com/shellhub-io/shellhub/pkg/api/requests"
 	"github.com/shellhub-io/shellhub/pkg/api/responses"
 	"github.com/shellhub-io/shellhub/pkg/clock"
@@ -52,12 +52,13 @@ func (s *service) CreateAPIKey(ctx context.Context, req *requests.CreateAPIKey) 
 		req.Key = uuid.Generate()
 	}
 
+	role := auth.RoleFromString(req.Role)
 	if req.OptRole != "" {
-		if !guard.HasAuthority(req.Role, req.OptRole) {
-			return nil, guard.ErrForbidden
+		if !role.HasAuthority(auth.RoleFromString(req.OptRole)) {
+			return nil, NewErrRoleInvalid()
 		}
 
-		req.Role = req.OptRole
+		role = auth.RoleFromString(req.OptRole)
 	}
 
 	// We don't store the plain key, which means we cannot save (because it is the primary key)
@@ -76,7 +77,7 @@ func (s *service) CreateAPIKey(ctx context.Context, req *requests.CreateAPIKey) 
 		ID:        hashedKey,
 		Name:      req.Name,
 		TenantID:  req.TenantID,
-		Role:      req.Role,
+		Role:      role,
 		ExpiresIn: expiresIn,
 		CreatedBy: req.UserID,
 	}
@@ -105,8 +106,8 @@ func (s *service) UpdateAPIKey(ctx context.Context, req *requests.UpdateAPIKey) 
 
 	// If req.Role is not empty, it must be lower than the user's role.
 	if req.Role != "" {
-		if m, ok := ns.FindMember(req.UserID); !ok || !guard.HasAuthority(m.Role, req.Role) {
-			return guard.ErrForbidden
+		if m, ok := ns.FindMember(req.UserID); !ok || !m.Role.HasAuthority(auth.RoleFromString(req.Role)) {
+			return NewErrRoleInvalid()
 		}
 	}
 

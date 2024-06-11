@@ -5,8 +5,8 @@ import (
 	"errors"
 	"strings"
 
-	"github.com/shellhub-io/shellhub/api/pkg/guard"
 	"github.com/shellhub-io/shellhub/api/store"
+	"github.com/shellhub-io/shellhub/pkg/api/auth"
 	req "github.com/shellhub-io/shellhub/pkg/api/internalclient"
 	"github.com/shellhub-io/shellhub/pkg/api/query"
 	"github.com/shellhub-io/shellhub/pkg/api/requests"
@@ -76,7 +76,7 @@ func (s *service) CreateNamespace(ctx context.Context, namespace requests.Namesp
 		Members: []models.Member{
 			{
 				ID:   user.ID,
-				Role: guard.RoleOwner,
+				Role: auth.RoleOwner,
 			},
 		},
 		Settings: &models.NamespaceSettings{
@@ -216,7 +216,10 @@ func (s *service) EditNamespace(ctx context.Context, req *requests.NamespaceEdit
 // one, AddNamespaceUser will return error.
 //
 // AddNamespaceUser returns a models.Namespace and an error. When error is not nil, the models.Namespace is nil.
-func (s *service) AddNamespaceUser(ctx context.Context, memberUsername, memberRole, tenantID, userID string) (*models.Namespace, error) {
+// TODO: use a request here
+func (s *service) AddNamespaceUser(ctx context.Context, memberUsername, role, tenantID, userID string) (*models.Namespace, error) {
+	memberRole := auth.RoleFromString(role)
+
 	if ok, err := s.validator.Struct(models.Member{Username: memberUsername, Role: memberRole}); !ok || err != nil {
 		return nil, NewErrNamespaceMemberInvalid(err)
 	}
@@ -248,8 +251,8 @@ func (s *service) AddNamespaceUser(ctx context.Context, memberUsername, memberRo
 		return nil, NewErrNamespaceMemberDuplicated(passive.ID, nil)
 	}
 
-	if !guard.HasAuthority(active.Role, memberRole) {
-		return nil, guard.ErrForbidden
+	if !active.Role.HasAuthority(memberRole) {
+		return nil, NewErrRoleInvalid()
 	}
 
 	return s.store.NamespaceAddMember(ctx, tenantID, passive.ID, memberRole)
@@ -297,8 +300,8 @@ func (s *service) RemoveNamespaceUser(ctx context.Context, tenantID, memberID, u
 	}
 
 	// checks if the active member can act over the passive member.
-	if !guard.HasAuthority(active.Role, passive.Role) {
-		return nil, guard.ErrForbidden
+	if !active.Role.HasAuthority(passive.Role) {
+		return nil, NewErrRoleInvalid()
 	}
 
 	removed, err := s.store.NamespaceRemoveMember(ctx, tenantID, member.ID)
@@ -348,17 +351,12 @@ func (s *service) EditNamespaceUser(ctx context.Context, tenantID, userID, membe
 		return NewErrNamespaceMemberNotFound(member.ID, err)
 	}
 
-	// Blocks if the active member's role is equal to the passive one.
-	if passive.Role == active.Role {
-		return guard.ErrForbidden
-	}
-
 	// checks if the active member can act over the passive member.
-	if !guard.HasAuthority(active.Role, memberNewRole) {
-		return guard.ErrForbidden
+	if !active.Role.HasAuthority(passive.Role) {
+		return NewErrRoleInvalid()
 	}
 
-	if err := s.store.NamespaceEditMember(ctx, tenantID, member.ID, memberNewRole); err != nil {
+	if err := s.store.NamespaceEditMember(ctx, tenantID, member.ID, auth.RoleFromString(memberNewRole)); err != nil {
 		return err
 	}
 
